@@ -1,3 +1,4 @@
 plugins/*
 log/
 tmp/
+config.yml

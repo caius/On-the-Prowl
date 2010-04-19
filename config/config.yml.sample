@@ -1,0 +1,6 @@
+prowl:
+  key: somerandomstring
+
+twitter:
+  user: someuser
+  pass: somepassword
