@@ -1,1 +1,3 @@
 plugins/*
+log/
+tmp/
