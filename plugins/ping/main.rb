@@ -1,11 +1,7 @@
-class Ping
+class Ping < Plugin
 
   def self.register
-    /ping/
-  end
-
-  def initialize string
-    OnTheProwl.logger.info "Ping plugin received #{string.inspect}"
+    /ping/i
   end
 
   def response
