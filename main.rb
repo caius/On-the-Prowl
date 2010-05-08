@@ -1,16 +1,16 @@
 require File.expand_path(File.dirname(__FILE__) + "/lib/on_the_prowl")
 
 EM.run do
-  @s = EM::start_server "127.0.0.1", 0
-  @port, _ = Socket.unpack_sockaddr_in(EM.get_sockname(@s))
-
   OTP = OnTheProwl.new
-
   OTP.start!
 
-  OTP.message "ping"
-
-  OTP.stop!
+  # Saves DMing myself for testing
+  module ManualServer
+    def receive_data data
+      OTP.message(data.chomp)
+    end
+  end
+  EM.start_server "127.0.0.1", 30303, ManualServer
 
   exit_block = lambda { OTP.stop! }
 

@@ -1,5 +1,5 @@
-
 class OnTheProwl
+  attr_accessor :config
 
   def initialize
     @matchers = {}
@@ -7,14 +7,25 @@ class OnTheProwl
 
   def start!
     logger.info "Starting up"
+    logger.debug "Loading config"
     load_config
+    logger.debug "Config done"
+    logger.debug "Loading plugins"
     load_plugins
+    logger.debug "Plugins done"
+    logger.debug "Setting up twitter"
+    setup_twitter
+    setup_twitter_timer
+    check_twitter[]
   end
 
   # read from config/
   def load_config
-    config_file = "#{OnTheProwl.root}/config/prowl.yml"
-    YAML.load_file(config_file)
+    self.config = YAML.load_file(config_file)
+    unless prowl.valid?
+      puts "Prowl credentials not valid"
+      exit
+    end
   rescue Errno::ENOENT
     puts "Config file not found"
     exit
@@ -26,28 +37,74 @@ class OnTheProwl
       logger.info "Loading plugin #{pw}"
       pw.load
       @matchers[pw.class] = pw.register
-      logger.info "Loaded plugin #{pw}"
+    end
+  end
+
+  def setup_twitter
+    @twitter = TwitterDMs.new(self)
+  end
+
+  def setup_twitter_timer
+    logger.info "DMs are read once every #{TwitterDMs.check_interval} seconds"
+    EM.add_periodic_timer(TwitterDMs.check_interval, &check_twitter)
+  end
+
+  def check_twitter
+    lambda do
+      @twitter.run do |text|
+        logger.debug "Handling #{text.inspect}"
+        self.message(text)
+      end
     end
   end
 
   def message string
     matchers.each do |plugin_class, regex|
       if string[regex]
-        logger.info "Will prowl: #{plugin_class}: #{plugin_class.new(string).response.inspect}"
+        logger.info "Passing #{string.inspect} to plugin #{plugin_class}"
+        prowl_response(plugin_class) do
+          plugin_class.new(string).response
+        end
       end
     end
   end
 
+  def prowl_response klass
+    return unless block_given?
+    response = yield
+    return unless response
+    logger.debug "Prowling #{klass}: #{response.inspect}"
+    prowl.add(:event => klass, :description => response) unless $DEBUG
+  end
+
   def stop!
-    puts "Shutting down..."
+    logger.info "Shutting down..."
     EM.stop
+  end
+
+  def save_config!
+    logger.debug "Saving config"
+
+    File.open(config_file, "w") do |out|
+      YAML.dump(self.config, out)
+    end
+
+    logger.info "Config saved!"
   end
 
 protected
   attr_accessor :matchers
 
+  def prowl
+    @prowl ||= Prowl.new(:apikey => config["prowl"]["key"], :application => "On The Prowl")
+  end
+
   def logger
     OnTheProwl.logger
+  end
+
+  def config_file
+    OnTheProwl.root + "config/config.yml"
   end
 
 end
