@@ -2,5 +2,8 @@ prowl:
   key: somerandomstring
 
 twitter:
-  user: someuser
-  pass: somepassword
+  # Find token & secret out by registering an oauth app
+  token: sometoken
+  secret: somesecret
+  nicks: # array of nicknames to accept DMs from
+    - Caius
