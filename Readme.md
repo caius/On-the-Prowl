@@ -18,3 +18,6 @@ Installation should be something along the lines of:
 8. `ruby main.rb`
 9. ???
 10. Beer
+
+[prowl]: http://prowl.weks.net/
+[twitter oauth]: http://twitter.com/apps/new
